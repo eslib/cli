@@ -1,0 +1,54 @@
+{
+  "name": "@eslib/cli",
+  "version": "0.1.0",
+  "description": "ESlib CLI tool",
+  "main": "dist/src/index.js",
+  "typings": "dist/src/index.d.ts",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "npm run clean && tsc -d",
+    "check": "node s./dist/src/index.js",
+    "clean": "rm -rf dist",
+    "lint": "tslint .",
+    "prepublish": "npm run lint && npm test",
+    "pretest": "npm run build",
+    "tdd": "concurrently -kr 'npm run watch' 'ava -w'",
+    "test": "ava",
+    "watch": "tsc -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/eslib/cli.git"
+  },
+  "author": "Boris Cherny <boris@performancejs.com> (https://performancejs.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eslib/cli/issues"
+  },
+  "homepage": "https://github.com/eslib/cli#readme",
+  "devDependencies": {
+    "@types/cli-color": "^0.3.29",
+    "@types/node": "^8.0.10",
+    "@types/semver": "^5.3.32",
+    "ava": "^0.20.0",
+    "tslint": "^5.5.0"
+  },
+  "dependencies": {
+    "@eslib/lodash": "^0.2.2",
+    "@eslib/std": "0.0.4",
+    "cli-color": "^1.2.0",
+    "eslib": "^0.2.0",
+    "semver": "^5.3.0",
+    "typescript": "^2.4.1"
+  },
+  "ava": {
+    "files": [
+      "dist/test/*.js"
+    ],
+    "source": [
+      "dist/src/*.js"
+    ]
+  }
+}

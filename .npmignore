@@ -1,0 +1,8 @@
+.DS_Store
+.vscode
+circle.yml
+node_modules
+logo.png
+logo.sketch
+test/
+dist/test/
