@@ -1,4 +1,4 @@
-<img src="logo.png" alt="ESlib" width="254px" />
+<img src="logo.png" alt="ESlib CLI" width="254px" />
 
 [![Build Status][build]](https://circleci.com/gh/eslib/cli) [![npm]](https://www.npmjs.com/package/@eslib/cli) [![mit]](https://opensource.org/licenses/MIT)
 
@@ -14,10 +14,8 @@
 
 ```sh
 npm install @eslib/cli -S
-npm explore @eslib/cli -- npm run check
+./node_modules/.bin/eslibcheck
 ```
-
-TODO: Install to consuming package's package.json?
 
 ## Tests
 

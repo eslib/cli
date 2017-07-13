@@ -1,10 +1,10 @@
 {
   "name": "@eslib/cli",
-  "bin": {
-    "check": "./dist/src/cli.js"
-  },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "ESlib CLI tool",
+  "bin": {
+    "eslibcheck": "./dist/src/cli.js"
+  },
   "main": "dist/src/index.js",
   "typings": "dist/src/index.d.ts",
   "directories": {
