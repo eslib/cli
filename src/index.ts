@@ -1,28 +1,38 @@
-import { black, blue, cyan, green, magenta } from 'cli-color'
+import { black, blue, cyan, green, magenta, whiteBright } from 'cli-color'
 import { ASSIGN_ERROR, AssignError } from 'eslib'
 import '@eslib/std'
 import { gte } from 'semver'
-import { ModuleKind, transpileModule, ScriptTarget } from 'typescript'
+import { compile } from './compile'
 
 let formatError: {
   [error: number]: (e: AssignError) => string
 } = {
-  [ASSIGN_ERROR.INVALID_VERSION]: e => `Version string ${magenta(e.meta.version)} for method ${green(e.meta.method)} on type ${blue(e.meta.type)} is invalid - please specify version as X.Y.Z (eg. ${magenta('1.2.3')})`,
-  [ASSIGN_ERROR.ALREADY_EXISTS_NATIVE]: e => `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because it is already natively installed`,
-  [ASSIGN_ERROR.ALREADY_EXISTS_EXTERNAL]: e => `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because it is already defined on ${logPrettyType(e.meta.type)} by some library outside of ESlib`,
-  [ASSIGN_ERROR.ALREADY_EXISTS_INCOMPATIBLE_LIB]: e => `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because another method with the same name was already installed by ${cyan(e.meta.otherAuthor)}`,
-  [ASSIGN_ERROR.ALREADY_EXISTS_INCOMPATIBLE_VERSION]: e => `Skipping method ${green(e.meta.method)} at version ${magenta(e.meta.version)} (provided by ${cyan(e.meta.author)}) because a${gte(e.meta.otherVersion || '0.0.0', e.meta.version) ? ' newer' : 'n older'} version ${magenta(e.meta.otherVersion)} is already installed on ${logPrettyType(e.meta.type)}`,
-  [ASSIGN_ERROR.RESERVED_WORD]: e => `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because it is a reserved word`
+    [ASSIGN_ERROR.INVALID_VERSION]: e =>
+      `Version string ${magenta(e.meta.version)} for method ${green(e.meta.method)} on type ${blue(e.meta.type)} is invalid - please specify version as X.Y.Z (eg. ${magenta('1.2.3')})`,
+
+    [ASSIGN_ERROR.ALREADY_EXISTS_NATIVE]: e =>
+      `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because it is already natively installed`,
+
+    [ASSIGN_ERROR.ALREADY_EXISTS_EXTERNAL]: e =>
+      `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because it is already defined on ${logPrettyType(e.meta.type)} by some library outside of ESlib`,
+
+    [ASSIGN_ERROR.ALREADY_EXISTS_INCOMPATIBLE_LIB]: e =>
+      `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because another method with the same name was already installed by ${cyan(e.meta.otherAuthor)}`,
+
+    [ASSIGN_ERROR.ALREADY_EXISTS_INCOMPATIBLE_VERSION]: e =>
+      `Skipping method ${green(e.meta.method)} at version ${magenta(e.meta.version)} (provided by ${cyan(e.meta.author)}) because a${gte(e.meta.otherVersion || '0.0.0', e.meta.version) ? ' newer' : 'n older'} version ${magenta(e.meta.otherVersion)} is already installed on ${logPrettyType(e.meta.type)}`,
+
+    [ASSIGN_ERROR.RESERVED_WORD]: e =>
+      `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because it is a reserved word`
 }
 
-let compile = (ts: string) =>
-  transpileModule(ts, {
-    compilerOptions: {
-      module: ModuleKind.None,
-      target: ScriptTarget.ES5
-    }
-  })
-
+/**
+ * TODO: Do this less naively
+ *
+ * TODO: Support 3rd party extensions
+ *  - {"eslib": true} in package.json?
+ *  - Scan for calls to eslib.assign?
+ */
 let getInstalledLibs = (): string[] => {
   let deps: { [k: string]: string } = require(process.cwd() + '/package.json').dependencies
   return deps
@@ -32,24 +42,47 @@ let getInstalledLibs = (): string[] => {
 }
 
 let generateTs = (libpaths: string[]): string =>
-  libpaths.map(_ => `require('${_}')`).join('\n') + '\n'
+  libpaths.map(_ => `import '${_}'`).join('\n') + '\n'
 
 let run = (libpaths: string[]) =>
   libpaths.forEach(require)
 
-let warn = (message: string) =>
-  console.warn(black.bgYellowBright(`ESLib warning`), message)
+let type: {
+  [error: number]: string
+} = {
+  [ASSIGN_ERROR.ALREADY_EXISTS_EXTERNAL]: black.bgWhite('ALREADY_EXISTS_EXTERNAL') + '           ',
+  [ASSIGN_ERROR.ALREADY_EXISTS_INCOMPATIBLE_LIB]: black.bgWhite('ALREADY_EXISTS_INCOMPATIBLE_LIB') + '    ',
+  [ASSIGN_ERROR.ALREADY_EXISTS_INCOMPATIBLE_VERSION]: black.bgWhite('ALREADY_EXISTS_INCOMPATIBLE_VERSION'),
+  [ASSIGN_ERROR.ALREADY_EXISTS_NATIVE]: black.bgWhite('ALREADY_EXISTS_NATIVE') + '              ',
+  [ASSIGN_ERROR.RESERVED_WORD]: black.bgWhite('RESERVED_WORD') + ' '.repeat(35 - 13),
+  [ASSIGN_ERROR.INVALID_VERSION]: black.bgWhite('INVALID_VERSION') + ' '.repeat(35 - 15)
+}
 
-function main() {
+let warnES = (e: AssignError, message: string) =>
+  console.warn(black.bgYellowBright(`ESLib warning`), type[e.error], message)
+
+let warnTS = (message: string) =>
+  console.warn(whiteBright.bgBlue('TypeScript error'), message)
+
+async function main() {
   let libs = getInstalledLibs()
-  let { diagnostics } = compile(generateTs(libs))
-  console.log(diagnostics)
-  run(libs)
-  let errors: AssignError[] = require('eslib').__errors
+  let ts = generateTs(libs)
 
-  errors
-    .sort((a, b) => b.error - a.error)
-    .forEach(_ => warn(formatError[_.error](_)))
+  try {
+    let diagnostics = await compile(ts)
+
+    diagnostics
+      .forEach(warnTS)
+
+    run(libs)
+    let errors: AssignError[] = require('eslib').__errors
+
+    errors
+      .sort((a, b) => b.error - a.error)
+      .forEach(_ => warnES(_, formatError[_.error](_)))
+  } catch (e) {
+    console.log('error!', e)
+  }
 }
 
 let prettyTypes = new Map<object, string>()
