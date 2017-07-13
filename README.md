@@ -17,6 +17,8 @@ npm install @eslib/cli -S
 ./node_modules/.bin/eslibcheck
 ```
 
+![](screenie.png)
+
 ## Tests
 
 ```sh
