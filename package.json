@@ -3,7 +3,7 @@
   "bin": {
     "check": "./dist/src/cli.js"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ESlib CLI tool",
   "main": "dist/src/index.js",
   "typings": "dist/src/index.d.ts",
