@@ -12,7 +12,7 @@ const OPTIONS: CompilerOptions = {
 }
 
 /**
- * TODO: Avoid writing temp file to disk if possible
+ * TODO: Avoid writing temp files to disk
  */
 export async function compile(ts: string): Promise<string[]> {
 
@@ -25,6 +25,7 @@ export async function compile(ts: string): Promise<string[]> {
   let allDiagnostics = getPreEmitDiagnostics(program).concat(emitResult.diagnostics)
 
   // TODO: try/finally
+  await unlink(filename + '.js')
   await unlink(filename + '.ts')
 
   return allDiagnostics.map(diagnostic =>

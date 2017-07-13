@@ -1,6 +1,6 @@
+import '@eslib/std'
 import { black, blue, cyan, green, magenta, whiteBright } from 'cli-color'
 import { ASSIGN_ERROR, AssignError } from 'eslib'
-import '@eslib/std'
 import { gte } from 'semver'
 import { compile } from './compile'
 
@@ -64,25 +64,21 @@ let warnES = (e: AssignError, message: string) =>
 let warnTS = (message: string) =>
   console.warn(whiteBright.bgBlue('TypeScript error'), message)
 
-async function main() {
+export let check = async () => {
   let libs = getInstalledLibs()
   let ts = generateTs(libs)
+  let diagnostics = await compile(ts)
 
-  try {
-    let diagnostics = await compile(ts)
+  diagnostics
+    .forEach(warnTS)
 
-    diagnostics
-      .forEach(warnTS)
+  // hacky! TODO: find a better API
+  run(libs)
+  let errors: AssignError[] = require('eslib').__errors
 
-    run(libs)
-    let errors: AssignError[] = require('eslib').__errors
-
-    errors
-      .sort((a, b) => b.error - a.error)
-      .forEach(_ => warnES(_, formatError[_.error](_)))
-  } catch (e) {
-    console.log('error!', e)
-  }
+  errors
+    .sort((a, b) => b.error - a.error)
+    .forEach(_ => warnES(_, formatError[_.error](_)))
 }
 
 let prettyTypes = new Map<object, string>()
@@ -103,5 +99,3 @@ prettyTypes.set(String.prototype, 'String.prototype')
 function logPrettyType(type: object): string {
   return blue(prettyTypes.get(type) || type)
 }
-
-main()

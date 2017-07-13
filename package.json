@@ -1,5 +1,8 @@
 {
   "name": "@eslib/cli",
+  "bin": {
+    "check": "./dist/src/cli.js"
+  },
   "version": "0.1.0",
   "description": "ESlib CLI tool",
   "main": "dist/src/index.js",
