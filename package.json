@@ -34,7 +34,7 @@
   "devDependencies": {
     "@types/cli-color": "^0.3.29",
     "@types/mz": "0.0.31",
-    "@types/node": "^8.0.10",
+    "@types/node": "^8.0.13",
     "@types/semver": "^5.3.32",
     "ava": "^0.20.0",
     "tslint": "^5.5.0"

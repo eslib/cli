@@ -3,6 +3,7 @@ import { black, blue, cyan, green, magenta, whiteBright } from 'cli-color'
 import { ASSIGN_ERROR, AssignError } from 'eslib'
 import { gte } from 'semver'
 import { compile } from './compile'
+import { readFileSync } from 'fs'
 
 let formatError: {
   [error: number]: (e: AssignError) => string
@@ -24,6 +25,13 @@ let formatError: {
 
     [ASSIGN_ERROR.RESERVED_WORD]: e =>
       `Skipping method ${green(e.meta.method)} on ${logPrettyType(e.meta.type)} (provided by ${cyan(e.meta.author)}) because it is a reserved word`
+  }
+
+// TODO: make it async
+let isEslib = (packageName: string) => {
+  let a = JSON.parse(readFileSync(process.cwd() + '/node_modules/' + packageName + '/package.json', 'utf8'))
+  console.log(a)
+  return a.eslib
 }
 
 /**
@@ -38,7 +46,7 @@ let getInstalledLibs = (): string[] => {
   return deps
     .entries()
     .map(([key]) => key)
-    .filter(_ => _.startsWith('@eslib/'))
+    .filter(isEslib)
 }
 
 let generateTs = (libpaths: string[]): string =>
@@ -69,8 +77,7 @@ export let check = async () => {
   let ts = generateTs(libs)
   let diagnostics = await compile(ts)
 
-  diagnostics
-    .forEach(warnTS)
+  warnTS(diagnostics)
 
   // hacky! TODO: find a better API
   run(libs)
